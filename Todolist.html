@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow - Modern To-Do App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .glass {
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+        
+        .task-item {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .task-item:hover {
+            transform: translateY(-2px);
+        }
+        
+        .completed {
+            opacity: 0.7;
+        }
+        
+        .slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .slide-out {
+            animation: slideOut 0.3s ease-in forwards;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes slideOut {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+        }
+        
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+        
+        @keyframes floating {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+        
+        .pulse-ring {
+            animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.8);
+                opacity: 1;
+            }
+            80%, 100% {
+                transform: scale(1.2);
+                opacity: 0;
+            }
+        }
+        
+        /* Mobile-first responsive design */
+        @media (max-width: 640px) {
+            .mobile-padding {
+                padding: 1rem;
+            }
+            
+            .mobile-text {
+                font-size: 0.875rem;
+            }
+            
+            .mobile-button {
+                padding: 0.5rem;
+                min-width: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen transition-all duration-500" id="body">
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full opacity-20 floating"></div>
+        <div class="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full opacity-20 floating" style="animation-delay: 2s;"></div>
+        <div class="absolute top-1/2 left-1/4 w-32 h-32 bg-gradient-to-r from-green-400 to-teal-400 rounded-full opacity-10 floating" style="animation-delay: 1s;"></div>
+    </div>
+
+    <div class="relative z-10 container mx-auto px-4 py-8 max-w-md mobile-padding">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="flex items-center justify-center gap-3 mb-4">
+                <div class="relative">
+                    <div class="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl pulse-ring"></div>
+                    <div class="relative p-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl shadow-lg">
+                        <i class="fas fa-sparkles text-white text-2xl"></i>
+                    </div>
+                </div>
+                <h1 class="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    TaskFlow
+                </h1>
+                <button id="darkModeToggle" class="p-2 rounded-xl glass border border-white/20 hover:bg-white/10 transition-all">
+                    <i class="fas fa-moon text-gray-600" id="darkModeIcon"></i>
+                </button>
+            </div>
+            
+            <!-- Stats -->
+            <div class="flex justify-center gap-4 p-4 rounded-2xl glass border border-white/20 shadow-lg" id="statsContainer">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-gray-800" id="totalTasks">0</div>
+                    <div class="text-xs text-gray-600">Total</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-green-600" id="completedTasks">0</div>
+                    <div class="text-xs text-gray-600">Done</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-blue-600" id="activeTasks">0</div>
+                    <div class="text-xs text-gray-600">Active</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Task -->
+        <div class="mb-6">
+            <div class="flex gap-2 p-2 rounded-2xl glass border border-white/20 shadow-lg">
+                <input 
+                    type="text" 
+                    id="taskInput" 
+                    placeholder="Add a new task..." 
+                    class="flex-1 bg-transparent px-4 py-3 text-gray-700 placeholder-gray-400 outline-none mobile-text"
+                    maxlength="100"
+                >
+                <button 
+                    id="addTaskBtn" 
+                    class="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-3 rounded-xl hover:shadow-lg transition-all mobile-button"
+                    title="Add Task"
+                >
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter Buttons -->
+        <div class="flex gap-2 mb-6 overflow-x-auto">
+            <button class="filter-btn px-4 py-2 rounded-xl glass border border-white/20 whitespace-nowrap transition-all mobile-text" data-filter="all">
+                <i class="fas fa-list mr-2"></i>All
+            </button>
+            <button class="filter-btn px-4 py-2 rounded-xl glass border border-white/20 whitespace-nowrap transition-all mobile-text" data-filter="active">
+                <i class="fas fa-clock mr-2"></i>Active
+            </button>
+            <button class="filter-btn px-4 py-2 rounded-xl glass border border-white/20 whitespace-nowrap transition-all mobile-text" data-filter="completed">
+                <i class="fas fa-check-circle mr-2"></i>Done
+            </button>
+        </div>
+
+        <!-- Tasks List -->
+        <div id="tasksList" class="space-y-3">
+            <!-- Tasks will be rendered here -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="text-center py-12 hidden">
+            <div class="mb-4">
+                <i class="fas fa-clipboard-list text-6xl text-gray-300"></i>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-500 mb-2">No tasks yet</h3>
+            <p class="text-gray-400">Add your first task above to get started!</p>
+        </div>
+    </div>
+
+    <script>
+        class TodoApp {
+            constructor() {
+                this.tasks = this.loadTasks();
+                this.currentFilter = 'all';
+                this.darkMode = this.loadDarkMode();
+                this.init();
+            }
+
+            init() {
+                this.bindEvents();
+                this.applyDarkMode();
+                this.renderTasks();
+                this.updateStats();
+            }
+
+            bindEvents() {
+                // Add task events
+                document.getElementById('addTaskBtn').addEventListener('click', () => this.addTask());
+                document.getElementById('taskInput').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.addTask();
+                });
+
+                // Filter events
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => this.setFilter(e.target.dataset.filter));
+                });
+
+                // Dark mode toggle
+                document.getElementById('darkModeToggle').addEventListener('click', () => this.toggleDarkMode());
+            }
+
+            generateId() {
+                return Date.now().toString(36) + Math.random().toString(36).substr(2);
+            }
+
+            addTask() {
+                const input = document.getElementById('taskInput');
+                const text = input.value.trim();
+                
+                if (text) {
+                    const newTask = {
+                        id: this.generateId(),
+                        text: text,
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                    };
+                    
+                    this.tasks.unshift(newTask);
+                    this.saveTasks();
+                    input.value = '';
+                    this.renderTasks();
+                    this.updateStats();
+                }
+            }
+
+            toggleTask(id) {
+                const task = this.tasks.find(t => t.id === id);
+                if (task) {
+                    task.completed = !task.completed;
+                    this.saveTasks();
+                    this.renderTasks();
+                    this.updateStats();
+                }
+            }
+
+            deleteTask(id) {
+                const taskElement = document.querySelector(`[data-task-id="${id}"]`);
+                if (taskElement) {
+                    taskElement.classList.add('slide-out');
+                    setTimeout(() => {
+                        this.tasks = this.tasks.filter(t => t.id !== id);
+                        this.saveTasks();
+                        this.renderTasks();
+                        this.updateStats();
+                    }, 300);
+                }
+            }
+
+            setFilter(filter) {
+                this.currentFilter = filter;
+                
+                // Update filter button styles
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.classList.remove('bg-gradient-to-r', 'from-purple-600', 'to-pink-600', 'text-white');
+                    btn.classList.add('text-gray-600');
+                });
+                
+                const activeBtn = document.querySelector(`[data-filter="${filter}"]`);
+                activeBtn.classList.add('bg-gradient-to-r', 'from-purple-600', 'to-pink-600', 'text-white');
+                activeBtn.classList.remove('text-gray-600');
+                
+                this.renderTasks();
+            }
+
+            toggleDarkMode() {
+                this.darkMode = !this.darkMode;
+                this.saveDarkMode();
+                this.applyDarkMode();
+            }
+
+            applyDarkMode() {
+                const body = document.getElementById('body');
+                const icon = document.getElementById('darkModeIcon');
+                
+                if (this.darkMode) {
+                    body.className = 'min-h-screen transition-all duration-500 bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900';
+                    icon.className = 'fas fa-sun text-yellow-400';
+                    document.documentElement.classList.add('dark');
+                } else {
+                    body.className = 'min-h-screen transition-all duration-500 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50';
+                    icon.className = 'fas fa-moon text-gray-600';
+                    document.documentElement.classList.remove('dark');
+                }
+            }
+
+            getFilteredTasks() {
+                switch (this.currentFilter) {
+                    case 'active':
+                        return this.tasks.filter(task => !task.completed);
+                    case 'completed':
+                        return this.tasks.filter(task => task.completed);
+                    default:
+                        return this.tasks;
+                }
+            }
+
+            renderTasks() {
+                const container = document.getElementById('tasksList');
+                const emptyState = document.getElementById('emptyState');
+                const filteredTasks = this.getFilteredTasks();
+
+                if (filteredTasks.length === 0) {
+                    container.innerHTML = '';
+                    emptyState.classList.remove('hidden');
+                    return;
+                }
+
+                emptyState.classList.add('hidden');
+                
+                container.innerHTML = filteredTasks.map(task => `
+                    <div class="task-item slide-in p-4 rounded-2xl glass border border-white/20 shadow-lg ${task.completed ? 'completed' : ''}" data-task-id="${task.id}">
+                        <div class="flex items-center gap-3">
+                            <button 
+                                class="task-toggle w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                                    task.completed 
+                                        ? 'bg-green-500 border-green-500' 
+                                        : 'border-gray-300 hover:border-green-400'
+                                }"
+                                onclick="app.toggleTask('${task.id}')"
+                            >
+                                ${task.completed ? '<i class="fas fa-check text-white text-xs"></i>' : ''}
+                            </button>
+                            
+                            <div class="flex-1 min-w-0">
+                                <p class="task-text ${task.completed ? 'line-through text-gray-500' : 'text-gray-700'} ${this.darkMode ? 'text-gray-300' : ''} break-words mobile-text">
+                                    ${task.text}
+                                </p>
+                                <p class="text-xs text-gray-400 mt-1">
+                                    ${new Date(task.createdAt).toLocaleDateString()}
+                                </p>
+                            </div>
+                            
+                            <button 
+                                class="delete-btn p-2 rounded-lg text-red-500 hover:bg-red-50 transition-all mobile-button"
+                                onclick="app.deleteTask('${task.id}')"
+                                title="Delete Task"
+                            >
+                                <i class="fas fa-trash text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            updateStats() {
+                const total = this.tasks.length;
+                const completed = this.tasks.filter(task => task.completed).length;
+                const active = total - completed;
+
+                document.getElementById('totalTasks').textContent = total;
+                document.getElementById('completedTasks').textContent = completed;
+                document.getElementById('activeTasks').textContent = active;
+            }
+
+            // localStorage methods
+            saveTasks() {
+                localStorage.setItem('todoTasks', JSON.stringify(this.tasks));
+            }
+
+            loadTasks() {
+                const saved = localStorage.getItem('todoTasks');
+                return saved ? JSON.parse(saved) : [];
+            }
+
+            saveDarkMode() {
+                localStorage.setItem('todoDarkMode', JSON.stringify(this.darkMode));
+            }
+
+            loadDarkMode() {
+                const saved = localStorage.getItem('todoDarkMode');
+                return saved ? JSON.parse(saved) : false;
+            }
+        }
+
+        // Initialize app when DOM is loaded
+        let app;
+        document.addEventListener('DOMContentLoaded', () => {
+            app = new TodoApp();
+        });
+    </script>
+</body>
+</html>
